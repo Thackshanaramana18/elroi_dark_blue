@@ -2,14 +2,30 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0B1630;
+  --primary-blue: #0B1630;
+  --primary-blue-dark: #081225;
+  --accent-blue: #2563eb;
+  --light-gray: #A8B3C6;
+  --muted-gray: #94a3b8;
+  --white: #ffffff;
+  --elroi-navy: #050A24;
+  --elroi-blue: #1E4DD8;
+  --elroi-blue-hover: #254BE9;
+  --elroi-text: #EAF0FF;
+  --elroi-sub: #B9C2DC;
+  --font-primary: 'Inter', 'Poppins', 'Segoe UI', Arial, sans-serif;
+  --font-mono: 'Geist Mono', monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-elroi-navy: var(--elroi-navy);
+  --color-elroi-blue: var(--elroi-blue);
+  --color-elroi-blue-hover: var(--elroi-blue-hover);
+  --color-elroi-text: var(--elroi-text);
+  --color-elroi-sub: var(--elroi-sub);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +38,66 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-primary);
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  position: absolute;
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+}
+
+/* Custom glassmorphism effects */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.glass-effect-dark {
+  background: rgba(7, 12, 46, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Custom gradients */
+.bg-gradient-elroi {
+  background: linear-gradient(180deg, #001233 0%, #001845 100%);
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: all 0.3s ease-in-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(5, 10, 36, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 150, 255, 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 123, 255, 0.3);
 }
