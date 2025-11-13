@@ -12,6 +12,12 @@ export default function DashboardPage() {
     'opacity-0 translate-y-4', 'opacity-0 translate-y-4', 'opacity-0 translate-y-4',
     'opacity-0 translate-y-4', 'opacity-0 translate-y-4'
   ])
+  const [liveData, setLiveData] = useState({
+    temperature: null,
+    pressure: null,
+    humidity: null,
+    vibration: null
+  })
 
   useEffect(() => {
     const checkUser = async () => {
@@ -24,6 +30,39 @@ export default function DashboardPage() {
     }
 
     checkUser()
+    
+    // Load latest data from reports
+    const loadLatestData = () => {
+      try {
+        const savedReports = localStorage.getItem('predictive_reports')
+        if (savedReports) {
+          const reports = JSON.parse(savedReports)
+          
+          // Get latest temperature data
+          if (reports.Temperature && reports.Temperature.length > 0) {
+            const latestTemp = reports.Temperature[reports.Temperature.length - 1]
+            if (latestTemp.values && latestTemp.values.length > 0) {
+              const currentTemp = latestTemp.values[latestTemp.values.length - 1]
+              const avgTemp = (latestTemp.values.reduce((a,b) => a+b, 0) / latestTemp.values.length).toFixed(1)
+              setLiveData(prev => ({
+                ...prev,
+                temperature: { current: currentTemp.toFixed(1), average: avgTemp }
+              }))
+              console.log('✅ Dashboard loaded Temperature:', currentTemp.toFixed(1), '°C')
+            }
+          }
+          
+          // Load other parameters if available
+          // Pressure, Humidity, Vibration can be added when data is uploaded
+        }
+      } catch (error) {
+        console.error('Error loading dashboard data:', error)
+      }
+    }
+    
+    loadLatestData()
+    // Refresh data every 5 seconds
+    const dataInterval = setInterval(loadLatestData, 5000)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
@@ -47,6 +86,7 @@ export default function DashboardPage() {
     return () => {
       subscription.unsubscribe()
       timers.forEach(timer => clearTimeout(timer))
+      clearInterval(dataInterval)
     }
   }, [router])
 
@@ -59,9 +99,9 @@ export default function DashboardPage() {
     {
       id: 'temperature',
       title: 'Temperature',
-      value: '44.5',
+      value: liveData.temperature ? liveData.temperature.current : '44.5',
       unit: '°C',
-      subtext: 'Δ +0.8°C since last update',
+      subtext: liveData.temperature ? `Avg: ${liveData.temperature.average}°C` : 'Δ +0.8°C since last update',
       textColor: 'text-white',
       bgColor: 'bg-[#1E73BE]',
       icon: (
