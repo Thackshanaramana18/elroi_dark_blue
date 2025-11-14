@@ -145,17 +145,47 @@ export default function TemperaturePage() {
   const [activeTab, setActiveTab] = useState('live')
   const [currentTemp, setCurrentTemp] = useState(42.5)
   const [userThreshold, setUserThreshold] = useState(31.7)
+  const [currentTime, setCurrentTime] = useState(new Date())
   const [series, setSeries] = useState({ times: [], current: [], predicted: [], threshold: 31.7 })
   const fileInputRef = useRef(null)
   const [uploadedData, setUploadedData] = useState(null)
   const [analysisData, setAnalysisData] = useState(null)
   const [insights, setInsights] = useState([])
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showAnalysisTransition, setShowAnalysisTransition] = useState(false)
+  const [showFullReport, setShowFullReport] = useState(false)
   const [uploadForm, setUploadForm] = useState({ 
     param1: 'Time: 00:00 to 24:59 | Sensor: Temp-A1', 
     param2: 'Sample Rate: Every 5 seconds | Location: Zone-B', 
     param3: 'Source: Production Line 3 | Date: 2025-06-04' 
   })
+  
+  // Load threshold from settings (localStorage)
+  useEffect(() => {
+    const loadThreshold = () => {
+      const savedSettings = localStorage.getItem('systemSettings')
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings)
+        const newThreshold = settings.thresholdTemp || 31.7
+        setUserThreshold(newThreshold)
+        setSeries(prev => ({ ...prev, threshold: newThreshold }))
+      }
+    }
+    
+    // Load on mount
+    loadThreshold()
+    
+    // Listen for storage changes (when settings are updated)
+    const handleStorageChange = () => {
+      loadThreshold()
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [])
   
   // Dynamic temperature simulation (decreasing)
   useEffect(() => {
@@ -165,6 +195,7 @@ export default function TemperaturePage() {
         const newTemp = prev - decrease
         return newTemp > 31.0 ? newTemp : 31.0 // Stop at minimum
       })
+      setCurrentTime(new Date()) // Update time every interval
     }, 2000) // Update every 2 seconds
     
     return () => clearInterval(interval)
@@ -351,6 +382,7 @@ export default function TemperaturePage() {
     if (!uploadedData) return
     
     setIsProcessing(true)
+    setShowAnalysisTransition(true)
     
     // Use setTimeout to prevent UI blocking
     setTimeout(() => {
@@ -389,6 +421,7 @@ export default function TemperaturePage() {
       })
       setInsights(insights)
       setIsProcessing(false)
+      setTimeout(() => setShowAnalysisTransition(false), 600)
     }, 100)
   }
 
@@ -407,6 +440,12 @@ export default function TemperaturePage() {
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Temperature Monitoring</h1>
                 <p className="text-sm text-gray-500 mt-1">Real-time predictive maintenance dashboard</p>
+              </div>
+              <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-orange-100 to-amber-100 rounded-lg border border-orange-200">
+                <svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span className="text-sm font-bold text-orange-800">Threshold: {series.threshold.toFixed(1)}°C</span>
               </div>
             </div>
             
@@ -435,24 +474,24 @@ export default function TemperaturePage() {
             
             {activeTab === 'live' && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+                  <div className="lg:col-span-2 bg-gradient-to-br from-white via-blue-50/30 to-cyan-50/40 rounded-2xl p-6 shadow-2xl border-2 border-blue-100 hover:shadow-blue-200/50 transition-all duration-300">
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <h2 className="text-xl font-bold text-gray-900">Temperature Profile</h2>
+                        <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">Temperature Profile</h2>
                         <p className="text-sm text-gray-500 mt-1">Actual vs Predicted Cooling Trajectory</p>
                       </div>
                       <div className="flex items-center space-x-4">
-                        <div className="flex items-center">
-                          <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-                          <span className="text-xs font-medium text-gray-600">Actual Data</span>
+                        <div className="flex items-center px-3 py-1.5 bg-blue-100 rounded-lg border border-blue-200">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 mr-2 shadow-lg shadow-blue-500/50"></span>
+                          <span className="text-xs font-bold text-blue-700">Actual Data</span>
                         </div>
-                        <div className="flex items-center">
-                          <span className="w-3 h-3 rounded-full bg-blue-200 mr-2"></span>
-                          <span className="text-xs font-medium text-gray-600">AI Prediction</span>
+                        <div className="flex items-center px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-100">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-300 to-blue-400 mr-2 shadow-md shadow-blue-300/40"></span>
+                          <span className="text-xs font-bold text-blue-600">AI Prediction</span>
                         </div>
-                        <div className="flex items-center">
-                          <span className="w-3 h-3 rounded-full bg-pink-500 mr-2"></span>
-                          <span className="text-xs font-medium text-gray-600">Threshold</span>
+                        <div className="flex items-center px-3 py-1.5 bg-pink-100 rounded-lg border border-pink-200">
+                          <span className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-500 to-pink-600 mr-2 shadow-lg shadow-pink-500/50"></span>
+                          <span className="text-xs font-bold text-pink-700">Threshold</span>
                         </div>
                       </div>
                     </div>
@@ -466,57 +505,84 @@ export default function TemperaturePage() {
                     />
                   </div>
 
-                  <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+                  <div className="bg-gradient-to-br from-white via-purple-50/30 to-pink-50/40 rounded-2xl p-6 shadow-2xl border-2 border-purple-100 hover:shadow-purple-200/50 transition-all duration-300">
                     <div className="mb-6">
-                      <h2 className="text-xl font-bold text-gray-900">Live Temperature Display</h2>
+                      <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Live Temperature Display</h2>
                       <p className="text-sm text-gray-500 mt-1">Real-time monitoring</p>
                     </div>
 
+                    {/* Current Time Display */}
+                    <div className="mb-4 p-4 bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-50 rounded-xl border-2 border-indigo-200 shadow-md">
+                      <div className="text-xs font-bold text-indigo-700 uppercase tracking-wide mb-2 text-center">Current Time</div>
+                      <div className="flex items-center justify-center space-x-1">
+                        <div className="bg-gradient-to-br from-white to-indigo-50 rounded-lg px-4 py-3 shadow-md border border-indigo-200">
+                          <span className="text-3xl font-black bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            {currentTime.getHours().toString().padStart(2, '0')}
+                          </span>
+                        </div>
+                        <span className="text-2xl font-bold text-indigo-500">:</span>
+                        <div className="bg-gradient-to-br from-white to-indigo-50 rounded-lg px-4 py-3 shadow-md border border-indigo-200">
+                          <span className="text-3xl font-black bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            {currentTime.getMinutes().toString().padStart(2, '0')}
+                          </span>
+                        </div>
+                        <span className="text-2xl font-bold text-indigo-500">:</span>
+                        <div className="bg-gradient-to-br from-white to-indigo-50 rounded-lg px-4 py-3 shadow-md border border-indigo-200">
+                          <span className="text-3xl font-black bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            {currentTime.getSeconds().toString().padStart(2, '0')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Temperature Reading */}
                     <div className="mb-6">
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Current Temperature</div>
-                      <div className="flex items-center justify-center space-x-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
-                        <div className="bg-white rounded-lg px-5 py-4 shadow-sm">
-                          <span className="text-4xl font-bold text-blue-600">{Math.floor(currentTemp / 10)}</span>
+                      <div className="text-xs font-bold text-blue-700 uppercase tracking-wide mb-3 text-center">Temperature Reading</div>
+                      <div className="flex items-center justify-center space-x-1.5 bg-gradient-to-br from-blue-100 via-blue-50 to-cyan-50 rounded-xl p-5 border-2 border-blue-200 shadow-lg">
+                        <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg px-4 py-3 shadow-md border border-blue-200">
+                          <span className="text-4xl font-bold bg-gradient-to-br from-blue-600 to-cyan-600 bg-clip-text text-transparent">{Math.floor(currentTemp / 10)}</span>
                         </div>
-                        <div className="bg-white rounded-lg px-5 py-4 shadow-sm">
-                          <span className="text-4xl font-bold text-blue-600">{Math.floor(currentTemp % 10)}</span>
+                        <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg px-4 py-3 shadow-md border border-blue-200">
+                          <span className="text-4xl font-bold bg-gradient-to-br from-blue-600 to-cyan-600 bg-clip-text text-transparent">{Math.floor(currentTemp % 10)}</span>
                         </div>
-                        <span className="text-3xl font-bold text-blue-400">.</span>
-                        <div className="bg-white rounded-lg px-5 py-4 shadow-sm">
-                          <span className="text-4xl font-bold text-blue-600">{Math.floor((currentTemp * 10) % 10)}</span>
+                        <span className="text-3xl font-bold text-blue-400 px-1">.</span>
+                        <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg px-4 py-3 shadow-md border border-blue-200">
+                          <span className="text-4xl font-bold bg-gradient-to-br from-blue-600 to-cyan-600 bg-clip-text text-transparent">{Math.floor((currentTemp * 10) % 10)}</span>
                         </div>
-                        <div className="bg-white rounded-lg px-5 py-4 shadow-sm">
-                          <span className="text-4xl font-bold text-blue-600">{Math.floor((currentTemp * 100) % 10)}</span>
+                        <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg px-4 py-3 shadow-md border border-blue-200">
+                          <span className="text-4xl font-bold bg-gradient-to-br from-blue-600 to-cyan-600 bg-clip-text text-transparent">{Math.floor((currentTemp * 100) % 10)}</span>
                         </div>
-                        <span className="text-2xl text-gray-400 ml-2">°C</span>
+                        <div className="flex items-center ml-2">
+                          <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">°C</span>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                    <div className="mb-6 p-4 bg-gradient-to-br from-green-100 via-emerald-50 to-teal-50 rounded-xl border-2 border-green-200 shadow-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-semibold text-gray-600 uppercase">Status</span>
-                        <span className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-full">COOLING</span>
+                        <span className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full shadow-lg shadow-green-500/40">COOLING</span>
                       </div>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm text-gray-600">Threshold</span>
+                        <span className="text-sm font-medium text-gray-700">Threshold</span>
                         <span className="text-sm font-bold text-gray-900">{series.threshold.toFixed(1)}°C</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Progress</span>
-                        <span className="text-sm font-bold text-blue-600">{((42.5 - currentTemp) / (42.5 - 31.7) * 100).toFixed(1)}%</span>
+                        <span className="text-sm font-medium text-gray-700">Progress</span>
+                        <span className="text-sm font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{((42.5 - currentTemp) / (42.5 - 31.7) * 100).toFixed(1)}%</span>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <button className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/30">
+                      <button className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 via-blue-700 to-cyan-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-cyan-800 transition-all shadow-lg shadow-blue-500/40 hover:shadow-xl hover:scale-105">
                         Start Monitoring
                       </button>
-                      <button className="w-full py-3 px-4 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 font-semibold rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all">
+                      <button className="w-full py-3 px-4 bg-gradient-to-r from-gray-200 to-gray-300 text-gray-700 font-bold rounded-xl hover:from-gray-300 hover:to-gray-400 transition-all shadow-md hover:shadow-lg hover:scale-105">
                         Pause
                       </button>
                       <button 
                         onClick={() => setSeries(prev => ({ ...prev, threshold: userThreshold }))}
-                        className="w-full py-3 px-4 bg-gradient-to-r from-pink-100 to-pink-200 text-pink-700 font-semibold rounded-xl hover:from-pink-200 hover:to-pink-300 transition-all"
+                        className="w-full py-3 px-4 bg-gradient-to-r from-pink-200 via-pink-300 to-pink-400 text-pink-800 font-bold rounded-xl hover:from-pink-300 hover:to-pink-500 transition-all shadow-md hover:shadow-lg hover:scale-105"
                       >
                         Update Threshold
                       </button>
@@ -531,9 +597,9 @@ export default function TemperaturePage() {
                   <div className="space-y-6">
                     {/* Upload Section - Show First */}
                     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                      <div className="grid grid-cols-1 lg:grid-cols-2">
+                      <div className="grid grid-cols-1">
                         {/* Left Side - Upload Box */}
-                        <div className="p-8 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border-r border-gray-200">
+                        <div className="p-8 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
                           <div className="flex items-center mb-6">
                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center mr-4 shadow-lg shadow-indigo-500/30">
                               <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -564,27 +630,10 @@ export default function TemperaturePage() {
                           </div>
                         </div>
 
-                        {/* Right Side - Colorful Pre-filled Text Boxes */}
+                        {/* Right Side - Info */}
                         <div className="p-8 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-                          <div className="space-y-4 mb-6">
-                            <div className="relative">
-                              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg blur opacity-20"></div>
-                              <input type="text" value={uploadForm.param1} onChange={(e) => handleFormChange('param1', e.target.value)}
-                                className="relative w-full px-4 py-3 bg-white border-2 border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-medium text-gray-700 shadow-sm"
-                                placeholder="Time range & sensor info" />
-                            </div>
-                            <div className="relative">
-                              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-lg blur opacity-20"></div>
-                              <input type="text" value={uploadForm.param2} onChange={(e) => handleFormChange('param2', e.target.value)}
-                                className="relative w-full px-4 py-3 bg-white border-2 border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-sm font-medium text-gray-700 shadow-sm"
-                                placeholder="Sample rate & location" />
-                            </div>
-                            <div className="relative">
-                              <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-amber-400 rounded-lg blur opacity-20"></div>
-                              <input type="text" value={uploadForm.param3} onChange={(e) => handleFormChange('param3', e.target.value)}
-                                className="relative w-full px-4 py-3 bg-white border-2 border-orange-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all text-sm font-medium text-gray-700 shadow-sm"
-                                placeholder="Source & remarks" />
-                            </div>
+                          <div className="mb-4">
+                            <p className="text-sm text-gray-600 text-center">No additional parameters needed. Upload your file to begin analysis.</p>
                           </div>
 
                           <div className="p-6 bg-gray-50 rounded-xl border border-gray-200">
@@ -640,8 +689,27 @@ export default function TemperaturePage() {
                         </div>
                       </div>
 
-                      {/* Detected Columns & Recommended Mapping */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+
+                      <button onClick={processDataForAnalysis} disabled={isProcessing}
+                        className={`w-full py-4 text-white font-bold text-lg rounded-xl transition-all shadow-lg ${
+                          isProcessing 
+                            ? 'bg-gray-400 cursor-not-allowed' 
+                            : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-indigo-500/30'
+                        }`}>
+                        {isProcessing ? (
+                          <span className="flex items-center justify-center">
+                            <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Processing...
+                          </span>
+                        ) : '🔬 Start Analysis →'}
+                      </button>
+
+                      {/* Detected Columns & Recommended Mapping (moved below the button) */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                         <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
                           <p className="text-xs font-semibold text-gray-600 uppercase mb-2">Detected Columns</p>
                           <div className="text-sm text-gray-700">
@@ -665,27 +733,10 @@ export default function TemperaturePage() {
                           )}
                         </div>
                       </div>
-
-                      <button onClick={processDataForAnalysis} disabled={isProcessing}
-                        className={`w-full py-4 text-white font-bold text-lg rounded-xl transition-all shadow-lg ${
-                          isProcessing 
-                            ? 'bg-gray-400 cursor-not-allowed' 
-                            : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-indigo-500/30'
-                        }`}>
-                        {isProcessing ? (
-                          <span className="flex items-center justify-center">
-                            <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Processing...
-                          </span>
-                        ) : '🔬 Start Analysis →'}
-                      </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-6 animate-fadeIn">
                     {/* Stats Cards Row - Show ONLY in analysis results */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {/* Stat card 1 - Current Temperature */}
@@ -696,18 +747,18 @@ export default function TemperaturePage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                           </div>
-                          <span className="text-xs font-bold px-3 py-1.5 bg-blue-600 text-white rounded-full shadow-md">Live • {analysisData.current.length} pts</span>
+                          <span className="text-xs font-bold px-3 py-1.5 bg-blue-600 text-white rounded-full shadow-md">First Entry</span>
                         </div>
-                        <div className="text-xs font-bold text-blue-800 uppercase tracking-wide mb-2">Current Temperature</div>
+                        <div className="text-xs font-bold text-blue-800 uppercase tracking-wide mb-2">Starting Temperature</div>
                         <div className="flex items-baseline space-x-2">
-                          <span className="text-5xl font-black text-blue-900">{currentTemp.toFixed(1)}</span>
+                          <span className="text-5xl font-black text-blue-900">{analysisData.current[0]?.toFixed(1)}</span>
                           <span className="text-2xl font-bold text-blue-700">°C</span>
                         </div>
                         <div className="mt-3 flex items-center text-sm text-blue-700 font-semibold">
                           <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                           </svg>
-                          <span>Decreasing trend</span>
+                          <span>From uploaded data</span>
                         </div>
                       </div>
 
@@ -834,8 +885,11 @@ export default function TemperaturePage() {
                                 formatter={(value) => [`${value?.toFixed(3)} °C`, '']}
                               />
                               <Legend 
-                                wrapperStyle={{ fontSize: '13px', fontWeight: 500, paddingTop: '10px' }}
+                                wrapperStyle={{ fontSize: '13px', fontWeight: 500 }}
                                 iconType="line"
+                                align="right"
+                                verticalAlign="top"
+                                layout="vertical"
                               />
                               <ReferenceLine 
                                 y={analysisData.stats.avg} 
@@ -926,62 +980,73 @@ export default function TemperaturePage() {
                           </div>
                         </div>
                         
-                        {/* Scrollable table with ALL rows - Virtualized for performance */}
+                        {/* Scrollable table with LIMITED rows (50-100) */}
                         <div className="overflow-y-auto max-h-[450px] rounded-xl border border-gray-200">
                           <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
                               <tr>
                                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Timestamp</th>
                                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Temp (°C)</th>
+                                <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
-                              {analysisData.times.map((time, index) => (
-                                <tr key={index} className="hover:bg-blue-50 transition-colors">
-                                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{time}</td>
-                                  <td className="px-4 py-3 text-sm">
-                                    <span className="font-bold text-blue-600">{analysisData.current[index]?.toFixed(2)}</span>
-                                  </td>
-                                </tr>
-                              ))}
+                              {analysisData.times.slice(0, 100).map((time, index) => {
+                                const temp = analysisData.current[index]
+                                const isAlert = temp < series.threshold  // COOLING: Alert when BELOW threshold
+                                return (
+                                  <tr key={index} className="hover:bg-blue-50 transition-colors">
+                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{time}</td>
+                                    <td className="px-4 py-3 text-sm">
+                                      <span className="font-bold text-blue-600">{temp?.toFixed(2)}</span>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm">
+                                      {isAlert ? (
+                                        <span className="px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full border border-red-300">🚨 ALERT</span>
+                                      ) : (
+                                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full border border-green-300">✓ Normal</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                )
+                              })}
                             </tbody>
                           </table>
                         </div>
                         
-                        <p className="text-xs text-gray-500 mt-3 text-center">
-                          Showing all {analysisData.times.length} entries from {analysisData.fileName}
-                        </p>
+                        <div className="mt-4 text-center">
+                          <p className="text-xs text-gray-500 mb-3">
+                            Showing first 100 of {analysisData.times.length} entries from {analysisData.fileName}
+                          </p>
+                          <button 
+                            onClick={() => setShowFullReport(true)}
+                            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+                          >
+                            📊 View Full Excel Report ({analysisData.times.length} entries)
+                          </button>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-lg border border-gray-100">
-                      <div className="flex items-center mb-6">
+                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
+                      <div className="flex items-center mb-4">
                         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mr-3 shadow-lg shadow-orange-500/30">
                           <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                           </svg>
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold text-gray-900">AI-Powered Insights</h3>
-                          <p className="text-xs text-gray-500">Intelligent analysis of your data</p>
+                          <h3 className="text-lg font-bold text-gray-900">Insights Analysis</h3>
+                          <p className="text-xs text-gray-500">Data summary and trends</p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {insights.map((insight, index) => {
-                          const colors = [
-                            'from-blue-500 to-blue-600 shadow-blue-500/30',
-                            'from-purple-500 to-purple-600 shadow-purple-500/30',
-                            'from-pink-500 to-pink-600 shadow-pink-500/30',
-                            'from-green-500 to-green-600 shadow-green-500/30',
-                            'from-orange-500 to-orange-600 shadow-orange-500/30',
-                            'from-cyan-500 to-cyan-600 shadow-cyan-500/30'
-                          ]
-                          return (
-                            <div key={index} className={`p-5 bg-gradient-to-br ${colors[index % colors.length]} rounded-xl shadow-lg text-white`}>
-                              <p className="font-semibold text-sm">{insight}</p>
-                            </div>
-                          )
-                        })}
+                      <div className="space-y-2">
+                        {insights.map((insight, index) => (
+                          <div key={index} className="flex items-start">
+                            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                            <p className="text-sm text-gray-700 leading-relaxed">{insight}</p>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -991,6 +1056,124 @@ export default function TemperaturePage() {
           </div>
         </main>
       </div>
+
+      {/* Full Report Modal/Popup */}
+      {showFullReport && analysisData && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col animate-slideUp">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 p-6 rounded-t-2xl flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center mr-4">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-white">Full Excel Report</h2>
+                  <p className="text-sm text-white/80 mt-1">{analysisData.fileName} • {analysisData.times.length} Total Entries</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowFullReport(false)}
+                className="w-10 h-10 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body - Scrollable Table */}
+            <div className="flex-1 overflow-auto p-6">
+              <div className="rounded-xl border-2 border-gray-200 overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gradient-to-r from-gray-100 to-gray-200 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-black text-gray-800 uppercase tracking-wider">#</th>
+                      <th className="px-4 py-3 text-left text-xs font-black text-gray-800 uppercase tracking-wider">Timestamp</th>
+                      <th className="px-4 py-3 text-left text-xs font-black text-gray-800 uppercase tracking-wider">Temperature (°C)</th>
+                      {analysisData.predicted && analysisData.predicted.some(v => v !== undefined) && (
+                        <th className="px-4 py-3 text-left text-xs font-black text-gray-800 uppercase tracking-wider">Predicted (°C)</th>
+                      )}
+                      <th className="px-4 py-3 text-center text-xs font-black text-gray-800 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {analysisData.times.map((time, index) => {
+                      const temp = analysisData.current[index]
+                      const predicted = analysisData.predicted?.[index]
+                      const isAlert = temp < series.threshold  // COOLING: Alert when BELOW threshold
+                      return (
+                        <tr key={index} className={`hover:bg-blue-50 transition-colors ${
+                          isAlert ? 'bg-red-50/30' : ''
+                        }`}>
+                          <td className="px-4 py-3 text-sm font-bold text-gray-600">{index + 1}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{time}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <span className={`font-black text-lg ${
+                              isAlert ? 'text-red-600' : 'text-blue-600'
+                            }`}>
+                              {temp?.toFixed(3)}
+                            </span>
+                          </td>
+                          {analysisData.predicted && analysisData.predicted.some(v => v !== undefined) && (
+                            <td className="px-4 py-3 text-sm">
+                              {predicted ? (
+                                <span className="font-semibold text-purple-600">{predicted.toFixed(3)}</span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                          )}
+                          <td className="px-4 py-3 text-center">
+                            {isAlert ? (
+                              <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-black rounded-lg shadow-lg shadow-red-500/30">
+                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                ALERT
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-black rounded-lg shadow-lg shadow-green-500/30">
+                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Normal
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 p-4 rounded-b-2xl border-t border-gray-200 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="px-4 py-2 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg border border-blue-200">
+                  <span className="text-xs font-bold text-blue-800">Total: {analysisData.times.length} entries</span>
+                </div>
+                <div className="px-4 py-2 bg-gradient-to-r from-red-100 to-orange-100 rounded-lg border border-red-200">
+                  <span className="text-xs font-bold text-red-800">Alerts: {analysisData.current.filter(t => t < series.threshold).length}</span>
+                </div>
+                <div className="px-4 py-2 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg border border-green-200">
+                  <span className="text-xs font-bold text-green-800">Normal: {analysisData.current.filter(t => t >= series.threshold).length}</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowFullReport(false)}
+                className="px-6 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-bold text-sm rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all shadow-lg"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

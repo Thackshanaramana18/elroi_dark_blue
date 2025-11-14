@@ -36,9 +36,16 @@
 }
 
 body {
-  background: var(--background);
+  background: linear-gradient(135deg, #C5EAF3 0%, #DDF4F8 50%, #F7FCFE 100%);
   color: var(--foreground);
   font-family: var(--font-primary);
+  min-height: 100vh;
+}
+
+/* AI-style gradient background for all pages */
+.bg-ai-gradient {
+  background: linear-gradient(135deg, #C5EAF3 0%, #DDF4F8 50%, #F7FCFE 100%);
+  min-height: 100vh;
 }
 
 @keyframes ripple {

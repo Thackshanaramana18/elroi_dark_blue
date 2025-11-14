@@ -202,40 +202,10 @@ export default function ReportingPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F2F4F8]">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
       <Sidebar activeSection="reporting" />
 
       <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <header className="bg-[#0B1D42] h-[70px] border-b border-gray-200">
-          <div className="flex items-center justify-between px-8 h-full">
-            <h1 className="text-white text-xl font-bold">Reports Management</h1>
-            <div className="flex items-center space-x-6">
-              <button className="relative p-2 text-gray-300 hover:text-white transition-colors cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-              </button>
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full bg-white border border-[#1E73BE] flex items-center justify-center">
-                  <span className="text-[#1E73BE] text-sm font-semibold">
-                    {user?.email?.substring(0, 2).toUpperCase() || 'JD'}
-                  </span>
-                </div>
-                <button 
-                  onClick={async () => {
-                    await supabase.auth.signOut()
-                    router.push('/login')
-                  }}
-                  className="text-white text-sm font-medium hover:text-[#1E73BE] transition-colors cursor-pointer"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-
         {/* Main Content */}
         <main className="flex-1 p-8">
           <div className="mb-6">

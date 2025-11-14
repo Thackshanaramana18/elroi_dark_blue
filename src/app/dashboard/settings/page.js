@@ -28,54 +28,31 @@ export default function SettingsPage() {
     thresholdVibration: 1.2
   })
 
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('systemSettings')
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings))
+    }
+  }, [])
+
   const handleSave = () => {
-    // In a real app, this would save to a database
-    alert('Settings saved successfully!')
+    // Save to localStorage
+    localStorage.setItem('systemSettings', JSON.stringify(settings))
+    
+    // Trigger storage event for other tabs/components
+    window.dispatchEvent(new Event('storage'))
+    
+    alert('Settings saved successfully! All thresholds updated.')
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F2F4F8]">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
       {/* Left Sidebar */}
       <Sidebar activeSection="settings" />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <header className="bg-[#0B1D42] h-[70px] border-b border-gray-200">
-          <div className="flex items-center justify-between px-8 h-full">
-            <h1 className="text-white text-xl font-bold">Settings</h1>
-            <div className="flex items-center space-x-6">
-              <button className="relative p-2 text-gray-300 hover:text-white transition-colors cursor-pointer transform hover:scale-105 duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
-              </button>
-              <div className="flex items-center text-sm text-gray-300">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>11:22 AM</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full bg-white border border-[#1E73BE] flex items-center justify-center transform hover:scale-105 duration-200">
-                  <span className="text-[#1E73BE] text-sm font-semibold">JD</span>
-                </div>
-                <button 
-                  onClick={async () => {
-                    await supabase.auth.signOut()
-                    router.push('/login')
-                    router.refresh()
-                  }}
-                  className="text-white text-sm font-medium hover:text-[#1E73BE] transition-colors cursor-pointer transform hover:scale-105 duration-200"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-
         {/* Main Content */}
         <main className={`flex-1 p-8 transition-all duration-700 ease-in-out ${animationClass}`}>
           {/* Page Title */}
@@ -154,7 +131,7 @@ export default function SettingsPage() {
                     type="number" 
                     value={settings.thresholdTemp}
                     onChange={(e) => setSettings({...settings, thresholdTemp: parseFloat(e.target.value)})}
-                    className="w-full px-4 py-2 border border-[#D3D9E3] rounded-lg focus:ring-2 focus:ring-[#1E73BE] focus:border-[#1E73BE] bg-white transition-all duration-200 hover:shadow-md"
+                    className="w-full px-4 py-2 border border-[#D3D9E3] rounded-lg focus:ring-2 focus:ring-[#1E73BE] focus:border-[#1E73BE] bg-white text-gray-900 font-semibold transition-all duration-200 hover:shadow-md"
                   />
                 </div>
                 
@@ -165,7 +142,7 @@ export default function SettingsPage() {
                     step="0.1"
                     value={settings.thresholdPressure}
                     onChange={(e) => setSettings({...settings, thresholdPressure: parseFloat(e.target.value)})}
-                    className="w-full px-4 py-2 border border-[#D3D9E3] rounded-lg focus:ring-2 focus:ring-[#1E73BE] focus:border-[#1E73BE] bg-white transition-all duration-200 hover:shadow-md"
+                    className="w-full px-4 py-2 border border-[#D3D9E3] rounded-lg focus:ring-2 focus:ring-[#1E73BE] focus:border-[#1E73BE] bg-white text-gray-900 font-semibold transition-all duration-200 hover:shadow-md"
                   />
                 </div>
                 
@@ -175,7 +152,7 @@ export default function SettingsPage() {
                     type="number" 
                     value={settings.thresholdHumidity}
                     onChange={(e) => setSettings({...settings, thresholdHumidity: parseFloat(e.target.value)})}
-                    className="w-full px-4 py-2 border border-[#D3D9E3] rounded-lg focus:ring-2 focus:ring-[#1E73BE] focus:border-[#1E73BE] bg-white transition-all duration-200 hover:shadow-md"
+                    className="w-full px-4 py-2 border border-[#D3D9E3] rounded-lg focus:ring-2 focus:ring-[#1E73BE] focus:border-[#1E73BE] bg-white text-gray-900 font-semibold transition-all duration-200 hover:shadow-md"
                   />
                 </div>
                 
@@ -186,7 +163,7 @@ export default function SettingsPage() {
                     step="0.1"
                     value={settings.thresholdVibration}
                     onChange={(e) => setSettings({...settings, thresholdVibration: parseFloat(e.target.value)})}
-                    className="w-full px-4 py-2 border border-[#D3D9E3] rounded-lg focus:ring-2 focus:ring-[#1E73BE] focus:border-[#1E73BE] bg-white transition-all duration-200 hover:shadow-md"
+                    className="w-full px-4 py-2 border border-[#D3D9E3] rounded-lg focus:ring-2 focus:ring-[#1E73BE] focus:border-[#1E73BE] bg-white text-gray-900 font-semibold transition-all duration-200 hover:shadow-md"
                   />
                 </div>
               </div>
